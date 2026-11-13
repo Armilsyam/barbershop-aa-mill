@@ -34,6 +34,8 @@ export default function App() {
   const [reviews, setReviews] = useState(db.getReviews());
   const [bookings, setBookings] = useState(db.getBookings());
   const [students, setStudents] = useState(db.getStudents());
+  const [members, setMembers] = useState(db.getMembers());
+  const [communityMessages, setCommunityMessages] = useState(db.getCommunityMessages());
 
   // Modals state
   const [bookingModalOpen, setBookingModalOpen] = useState(false);
@@ -113,6 +115,17 @@ export default function App() {
   const handleOpenLessonModal = (lesson) => {
     setActiveLessonDetail(lesson);
     setLessonModalOpen(true);
+  };
+
+  const handleAddMember = (memberData) => {
+    const created = db.addMember(memberData);
+    setMembers(db.getMembers());
+    return created;
+  };
+
+  const handleSendCommunityMessage = (author, content) => {
+    const updated = db.sendCommunityMessage(author, content);
+    setCommunityMessages(updated);
   };
 
   // Handlers for Feed
@@ -204,10 +217,15 @@ export default function App() {
           <FeedView
             posts={feedPosts}
             haircuts={haircuts}
+            members={members}
+            communityMessages={communityMessages}
             onLikePost={handleLikePost}
             onAddComment={handleAddComment}
             onNewPost={handleNewPost}
+            onAddMember={handleAddMember}
+            onSendCommunityMessage={handleSendCommunityMessage}
             onSelectHaircutForBooking={(hc) => handleOpenBooking(hc)}
+            settings={settings}
             isAdmin={isAdmin}
           />
         )}

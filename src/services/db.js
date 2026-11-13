@@ -20,20 +20,24 @@ import {
   INITIAL_LESSONS, 
   INITIAL_FEED_POSTS, 
   INITIAL_REVIEWS, 
-  INITIAL_BOOKINGS 
+  INITIAL_BOOKINGS,
+  INITIAL_MEMBERS,
+  INITIAL_COMMUNITY_MESSAGES
 } from "../data/mockData";
 
 const STORAGE_KEYS = {
-  SETTINGS: "aamill_settings",
-  BARBERS: "aamill_barbers",
-  SERVICES: "aamill_services",
-  HAIRCUTS: "aamill_haircuts",
-  COURSES: "aamill_courses",
-  LESSONS: "aamill_lessons",
-  FEED: "aamill_feed",
-  REVIEWS: "aamill_reviews",
-  BOOKINGS: "aamill_bookings",
-  STUDENTS: "aamill_students"
+  SETTINGS: "aamill_settings_v2",
+  BARBERS: "aamill_barbers_v2",
+  SERVICES: "aamill_services_v2",
+  HAIRCUTS: "aamill_haircuts_v2",
+  COURSES: "aamill_courses_v2",
+  LESSONS: "aamill_lessons_v2",
+  FEED: "aamill_feed_v2",
+  REVIEWS: "aamill_reviews_v2",
+  BOOKINGS: "aamill_bookings_v2",
+  STUDENTS: "aamill_students_v2",
+  MEMBERS: "aamill_members_v2",
+  COMMUNITY_MSGS: "aamill_community_msgs_v2"
 };
 
 // Helper to initialize local storage with mock data if empty
@@ -101,14 +105,26 @@ export const db = {
     return newSettings;
   },
 
-  // BOOKINGS
+  // BOOKINGS & TRANSACTIONS
   getBookings: () => getLocalItem(STORAGE_KEYS.BOOKINGS, INITIAL_BOOKINGS),
   createBooking: (bookingData) => {
     const list = getLocalItem(STORAGE_KEYS.BOOKINGS, INITIAL_BOOKINGS);
+    const barbers = getLocalItem(STORAGE_KEYS.BARBERS, INITIAL_BARBERS);
+    
+    // Find capster commission rate
+    const capster = barbers.find(b => b.id === bookingData.barberId) || barbers[0];
+    const commissionRate = capster.commissionRate || 0.60;
+    const price = bookingData.totalPrice || 65000;
+    const capsterCommission = Math.round(price * commissionRate);
+    const barberShopShare = price - capsterCommission;
+
     const newBooking = {
       id: `BOK-${Math.floor(1000 + Math.random() * 9000)}`,
       createdAt: new Date().toISOString(),
       status: "pending",
+      capsterCommission,
+      barberShopShare,
+      paymentMethod: "QRIS / Kasir",
       ...bookingData
     };
     const updated = [newBooking, ...list];
@@ -125,6 +141,42 @@ export const db = {
     const list = getLocalItem(STORAGE_KEYS.BOOKINGS, INITIAL_BOOKINGS);
     const updated = list.filter((item) => item.id !== id);
     setLocalItem(STORAGE_KEYS.BOOKINGS, updated);
+    return updated;
+  },
+
+  // MEMBERS & CUSTOMER CLUB
+  getMembers: () => getLocalItem(STORAGE_KEYS.MEMBERS, INITIAL_MEMBERS),
+  addMember: (memberData) => {
+    const list = getLocalItem(STORAGE_KEYS.MEMBERS, INITIAL_MEMBERS);
+    const newMember = {
+      id: `MBR-${Math.floor(100 + Math.random() * 900)}`,
+      avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&auto=format&fit=crop&q=80",
+      tier: "Silver Member",
+      cutsCount: 1,
+      joinedDate: "Baru saja",
+      badge: "⚡ New Member",
+      ...memberData
+    };
+    const updated = [newMember, ...list];
+    setLocalItem(STORAGE_KEYS.MEMBERS, updated);
+    return newMember;
+  },
+
+  // COMMUNITY MESSAGES / DISKUSI GRUP
+  getCommunityMessages: () => getLocalItem(STORAGE_KEYS.COMMUNITY_MSGS, INITIAL_COMMUNITY_MESSAGES),
+  sendCommunityMessage: (author, content, avatar = null) => {
+    const list = getLocalItem(STORAGE_KEYS.COMMUNITY_MSGS, INITIAL_COMMUNITY_MESSAGES);
+    const newMsg = {
+      id: `msg-${Date.now()}`,
+      author: author || "Pelanggan AA'MILL",
+      avatar: avatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&auto=format&fit=crop&q=80",
+      content,
+      timestamp: "Baru saja",
+      likes: 0,
+      replies: []
+    };
+    const updated = [newMsg, ...list];
+    setLocalItem(STORAGE_KEYS.COMMUNITY_MSGS, updated);
     return updated;
   },
 
@@ -160,7 +212,7 @@ export const db = {
     if (barber.id) {
       updated = list.map((item) => (item.id === barber.id ? barber : item));
     } else {
-      const newItem = { id: `b-${Date.now()}`, ...barber };
+      const newItem = { id: `b-${Date.now()}`, commissionRate: 0.60, ...barber };
       updated = [...list, newItem];
     }
     setLocalItem(STORAGE_KEYS.BARBERS, updated);

@@ -70,15 +70,24 @@ export default function Footer({ setCurrentTab, onOpenBooking, settings }) {
             {settings?.tagline || "The Art of Precision Haircutting & Master Barber Academy"} — Memadukan seni pangkas rambut klasik gentleman dan tren modern kontemporer. Pusat pelatihan barber profesional berstandar industri dengan jaminan keterampilan kerja.
           </p>
 
-          <div className="pt-2 flex items-center gap-3">
+          <div className="pt-2 flex flex-wrap items-center gap-2">
             <a 
-              href={`https://wa.me/${settings?.whatsapp || '6281234567890'}`}
+              href="https://wa.me/6282291544262?text=Halo%20Admin%201%20Barbershop%20AA'MILL,%20saya%20mau%20reservasi"
               target="_blank" 
               rel="noreferrer"
-              className="px-3.5 py-2 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/40 text-emerald-400 text-xs font-semibold flex items-center gap-2 transition-colors"
+              className="px-3 py-1.5 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/40 text-emerald-400 text-xs font-semibold flex items-center gap-1.5 transition-colors"
             >
               <Send className="w-3.5 h-3.5" />
-              <span>WhatsApp Admin</span>
+              <span>Admin 1: 0822-9154-4262</span>
+            </a>
+            <a 
+              href="https://wa.me/6282191843162?text=Halo%20Admin%202%20AA'MILL%20Academy,%20saya%20mau%20tanya%20kursus"
+              target="_blank" 
+              rel="noreferrer"
+              className="px-3 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/40 text-amber-400 text-xs font-semibold flex items-center gap-1.5 transition-colors"
+            >
+              <Send className="w-3.5 h-3.5" />
+              <span>Admin 2: 0821-9184-3162</span>
             </a>
             <a 
               href="https://instagram.com" 

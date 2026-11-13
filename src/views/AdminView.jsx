@@ -5,22 +5,27 @@ import {
   Scissors, 
   BookOpen, 
   Users, 
-  Flame, 
   Settings, 
   Plus, 
   Trash2, 
   CheckCircle, 
   XCircle, 
   Send, 
-  Eye, 
   Save, 
   RefreshCw, 
   Cloud, 
   ShieldCheck,
   Phone,
-  User,
-  Sparkles,
-  ExternalLink
+  FileSpreadsheet,
+  Printer,
+  FileText,
+  DollarSign,
+  TrendingUp,
+  Percent,
+  Download,
+  Check,
+  Clock,
+  Filter
 } from 'lucide-react';
 
 export default function AdminView({ 
@@ -42,12 +47,17 @@ export default function AdminView({
   onDeletePost,
   onResetAllData 
 }) {
-  const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'bookings' | 'haircuts' | 'academy' | 'barbers' | 'settings'
+  const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'reports' | 'bookings' | 'haircuts' | 'academy' | 'barbers' | 'settings'
 
-  // Booking filters
+  // Booking table filters
   const [bookingFilter, setBookingFilter] = useState('all');
 
-  // New Haircut Modal / Form
+  // REPORT FILTERS
+  const [reportPeriod, setReportPeriod] = useState('daily'); // 'daily' | 'weekly' | 'monthly' | 'yearly'
+  const [reportBarberId, setReportBarberId] = useState('all'); // 'all' or barber id
+  const [customReportDate, setCustomReportDate] = useState('2026-11-13');
+
+  // New Haircut Modal
   const [showAddHaircut, setShowAddHaircut] = useState(false);
   const [newHaircut, setNewHaircut] = useState({
     title: '',
@@ -62,21 +72,336 @@ export default function AdminView({
   });
 
   // Settings form
-  const [formSettings, setFormSettings] = useState(settings);
+  const [formSettings, setFormSettings] = useState({
+    ...settings,
+    admin1: settings.admin1 || {
+      name: "Admin 1 (Reservasi & Booking)",
+      phone: "082291544262",
+      whatsapp: "6282291544262",
+      role: "Layanan Booking, Kasir & Antrean"
+    },
+    admin2: settings.admin2 || {
+      name: "Admin 2 (Academy & Konsultasi)",
+      phone: "082191843162",
+      whatsapp: "6282191843162",
+      role: "Pendaftaran Kursus Barber & Bisnis"
+    }
+  });
   const [saveSuccessMsg, setSaveSuccessMsg] = useState('');
 
-  // Stats calculation
-  const totalRevenue = bookings
+  // Overall stats
+  const totalRevenueAll = bookings
     .filter(b => b.status === 'confirmed' || b.status === 'completed')
     .reduce((acc, curr) => acc + (curr.totalPrice || 65000), 0);
 
   const pendingBookings = bookings.filter(b => b.status === 'pending').length;
-  const confirmedBookings = bookings.filter(b => b.status === 'confirmed').length;
+
+  // REPORT FILTER LOGIC
+  const getFilteredReportBookings = () => {
+    return bookings.filter(b => {
+      // Must be confirmed or completed
+      const isValid = b.status === 'confirmed' || b.status === 'completed';
+      if (!isValid) return false;
+
+      // Barber filter
+      if (reportBarberId !== 'all' && b.barberId !== reportBarberId) {
+        return false;
+      }
+
+      // Period filter
+      const bDate = b.date || b.createdAt?.split('T')[0] || '';
+      
+      if (reportPeriod === 'daily') {
+        return bDate === customReportDate;
+      }
+      if (reportPeriod === 'weekly') {
+        // Mock range: within last 7 days of 2026-11-13
+        return bDate >= '2026-11-07' && bDate <= '2026-11-13';
+      }
+      if (reportPeriod === 'monthly') {
+        // Same month (2026-11)
+        const targetMonth = customReportDate.substring(0, 7); // '2026-11'
+        return bDate.startsWith(targetMonth);
+      }
+      if (reportPeriod === 'yearly') {
+        // Same year (2026)
+        const targetYear = customReportDate.substring(0, 4); // '2026'
+        return bDate.startsWith(targetYear);
+      }
+
+      return true;
+    });
+  };
+
+  const reportBookings = getFilteredReportBookings();
+
+  // Metrics for report
+  const reportTotalRevenue = reportBookings.reduce((sum, b) => sum + (b.totalPrice || 65000), 0);
+  const reportTotalCapsterCommission = reportBookings.reduce((sum, b) => {
+    if (b.capsterCommission) return sum + b.capsterCommission;
+    // Default 60%
+    return sum + Math.round((b.totalPrice || 65000) * 0.6);
+  }, 0);
+  const reportTotalBarberShopShare = reportTotalRevenue - reportTotalCapsterCommission;
+  const reportAverageTicket = reportBookings.length > 0 ? Math.round(reportTotalRevenue / reportBookings.length) : 0;
+
+  // Breakdown per barber for accountability table
+  const barberPerformanceList = barbers.map(barber => {
+    const barberBookings = reportBookings.filter(b => b.barberId === barber.id);
+    const count = barberBookings.length;
+    const gross = barberBookings.reduce((s, b) => s + (b.totalPrice || 65000), 0);
+    const commission = barberBookings.reduce((s, b) => {
+      if (b.capsterCommission) return s + b.capsterCommission;
+      return s + Math.round((b.totalPrice || 65000) * (barber.commissionRate || 0.6));
+    }, 0);
+    const netBarbershop = gross - commission;
+
+    return {
+      barber,
+      count,
+      gross,
+      commission,
+      netBarbershop
+    };
+  });
+
+  // DOWNLOAD CSV HANDLER
+  const handleDownloadCSV = () => {
+    const selectedBarberName = reportBarberId === 'all' 
+      ? 'Semua Capster' 
+      : (barbers.find(b => b.id === reportBarberId)?.name || 'Capster');
+
+    let csvContent = "\uFEFF"; // UTF-8 BOM for Excel
+    csvContent += `LAPORAN PENGHASILAN DAN PERTANGGUNGJAWABAN KOMISI CAPSTER\n`;
+    csvContent += `BARBERSHOP AA'MILL & ACADEMY\n`;
+    csvContent += `Periode: ${reportPeriod.toUpperCase()} (${customReportDate})\n`;
+    csvContent += `Filter Capster: ${selectedBarberName}\n`;
+    csvContent += `Tanggal Unduh: ${new Date().toLocaleString('id-ID')}\n\n`;
+
+    // Ringkasan Keuangan
+    csvContent += `RINGKASAN AKUNTANSI\n`;
+    csvContent += `Total Transaksi Pelanggan,${reportBookings.length} Orang\n`;
+    csvContent += `Total Omzet Kotor (Gross),Rp ${reportTotalRevenue.toLocaleString('id-ID')}\n`;
+    csvContent += `Total Komisi Hak Capster,Rp ${reportTotalCapsterCommission.toLocaleString('id-ID')}\n`;
+    csvContent += `Pendapatan Bersih Kas Barbershop,Rp ${reportTotalBarberShopShare.toLocaleString('id-ID')}\n`;
+    csvContent += `Rata-rata Nilai Transaksi,Rp ${reportAverageTicket.toLocaleString('id-ID')}\n\n`;
+
+    // Rekapitulasi Per Capster
+    csvContent += `REKAPITULASI BAGI HASIL PER CAPSTER\n`;
+    csvContent += `Nama Capster,Peran,Tarif Komisi (%),Jumlah Cukur,Total Omzet Dihasilkan (Rp),Hak Komisi Capster (Rp),Kas Bersih Barbershop (Rp)\n`;
+    barberPerformanceList.forEach(item => {
+      csvContent += `"${item.barber.name}","${item.barber.role}",${Math.round((item.barber.commissionRate || 0.6) * 100)}%,${item.count},${item.gross},${item.commission},${item.netBarbershop}\n`;
+    });
+    csvContent += `\n`;
+
+    // Rincian Transaksi
+    csvContent += `RINCIAN TRANSAKSI DETAIL BUKU KAS\n`;
+    csvContent += `No,ID Tiket,Tanggal,Jam,Nama Pelanggan,No HP,Layanan Grooming,Model Cukuran,Capster Bertugas,Tarif (Rp),Komisi Capster (Rp),Kas Barbershop (Rp),Metode Bayar\n`;
+    reportBookings.forEach((b, idx) => {
+      const comm = b.capsterCommission || Math.round((b.totalPrice || 65000) * 0.6);
+      const shop = (b.totalPrice || 65000) - comm;
+      csvContent += `${idx + 1},"${b.id}","${b.date}","${b.timeSlot}","${b.customerName}","${b.phone}","${b.service}","${b.haircutStyle}","${b.barberName}",${b.totalPrice || 65000},${comm},${shop},"${b.paymentMethod || 'Kasir'}"\n`;
+    });
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `Laporan_Keuangan_AAMILL_${reportPeriod}_${customReportDate}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // PRINT / DOWNLOAD PDF HANDLER
+  const handlePrintPDF = () => {
+    const selectedBarberName = reportBarberId === 'all' 
+      ? 'SEMUA CAPSTER (KONSOLIDASI)' 
+      : (barbers.find(b => b.id === reportBarberId)?.name?.toUpperCase() || 'CAPSTER');
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      alert('Mohon izinkan pop-up browser untuk mencetak / mengunduh PDF laporan.');
+      return;
+    }
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Laporan Keuangan & Komisi Capster - Barbershop AA'MILL</title>
+        <style>
+          body { font-family: 'Helvetica Neue', Arial, sans-serif; font-size: 12px; color: #111; margin: 30px; line-height: 1.4; }
+          .header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 12px; margin-bottom: 20px; }
+          .header h1 { margin: 0; font-size: 22px; font-weight: bold; letter-spacing: 1px; }
+          .header p { margin: 3px 0 0; font-size: 11px; color: #555; }
+          .title { text-align: center; font-size: 15px; font-weight: bold; text-decoration: underline; margin-bottom: 15px; }
+          .meta-grid { display: flex; justify-content: space-between; margin-bottom: 20px; font-size: 11px; }
+          .summary-boxes { display: flex; gap: 10px; margin-bottom: 20px; }
+          .box { flex: 1; border: 1px solid #ccc; padding: 10px; background: #fafafa; border-radius: 4px; }
+          .box-title { font-size: 10px; text-transform: uppercase; color: #666; font-weight: bold; }
+          .box-val { font-size: 16px; font-weight: bold; margin-top: 4px; color: #000; }
+          table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 11px; }
+          table th, table td { border: 1px solid #ddd; padding: 6px 8px; text-align: left; }
+          table th { background: #f0f0f0; font-weight: bold; }
+          .text-right { text-align: right; }
+          .signatures { display: flex; justify-content: space-between; margin-top: 40px; page-break-inside: avoid; }
+          .sig-box { width: 30%; text-align: center; }
+          .sig-line { margin-top: 60px; border-bottom: 1px solid #000; font-weight: bold; }
+          @media print {
+            body { margin: 15mm; }
+            .no-print { display: none; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>BARBERSHOP AA'MILL & ACADEMY</h1>
+          <p>Jl. Veteran No. 88, Pusat Kota • WhatsApp Admin 1: 0822-9154-4262 • Admin 2: 0821-9184-3162</p>
+        </div>
+
+        <div class="title">LAPORAN REKAPITULASI PENGHASILAN & KOMISI BAGI HASIL CAPSTER</div>
+
+        <div class="meta-grid">
+          <div>
+            <strong>Periode Laporan:</strong> ${reportPeriod.toUpperCase()}<br>
+            <strong>Tanggal Acuan:</strong> ${customReportDate}<br>
+            <strong>Target Capster:</strong> ${selectedBarberName}
+          </div>
+          <div style="text-align: right;">
+            <strong>Nomor Dokumen:</strong> REP-AAMILL/${new Date().getFullYear()}/${Math.floor(1000 + Math.random() * 9000)}<br>
+            <strong>Waktu Cetak:</strong> ${new Date().toLocaleString('id-ID')}
+          </div>
+        </div>
+
+        <div class="summary-boxes">
+          <div class="box">
+            <div class="box-title">Total Omzet Kotor</div>
+            <div class="box-val">Rp ${reportTotalRevenue.toLocaleString('id-ID')}</div>
+          </div>
+          <div class="box">
+            <div class="box-title">Hak Komisi Capster</div>
+            <div class="box-val" style="color: #2563eb;">Rp ${reportTotalCapsterCommission.toLocaleString('id-ID')}</div>
+          </div>
+          <div class="box">
+            <div class="box-title">Kas Bersih Barbershop</div>
+            <div class="box-val" style="color: #16a34a;">Rp ${reportTotalBarberShopShare.toLocaleString('id-ID')}</div>
+          </div>
+          <div class="box">
+            <div class="box-title">Total Transaksi</div>
+            <div class="box-val">${reportBookings.length} Konsumen</div>
+          </div>
+        </div>
+
+        <h4 style="margin: 0 0 6px;">1. Rekapitulasi Perolehan Masing-Masing Capster</h4>
+        <table>
+          <thead>
+            <tr>
+              <th>Nama Capster</th>
+              <th>Jabatan / Role</th>
+              <th class="text-right">Bagi Hasil</th>
+              <th class="text-right">Jml Cukur</th>
+              <th class="text-right">Omzet Bruto</th>
+              <th class="text-right">Hak Komisi Capster</th>
+              <th class="text-right">Kas Barbershop</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${barberPerformanceList.map(item => `
+              <tr>
+                <td><strong>${item.barber.name}</strong></td>
+                <td>${item.barber.role}</td>
+                <td class="text-right">${Math.round((item.barber.commissionRate || 0.6) * 100)}%</td>
+                <td class="text-right">${item.count}</td>
+                <td class="text-right">Rp ${item.gross.toLocaleString('id-ID')}</td>
+                <td class="text-right" style="font-weight: bold; color: #2563eb;">Rp ${item.commission.toLocaleString('id-ID')}</td>
+                <td class="text-right">Rp ${item.netBarbershop.toLocaleString('id-ID')}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+          <tfoot>
+            <tr style="font-weight: bold; background: #fafafa;">
+              <td colspan="3">TOTAL KESELURUHAN</td>
+              <td class="text-right">${reportBookings.length}</td>
+              <td class="text-right">Rp ${reportTotalRevenue.toLocaleString('id-ID')}</td>
+              <td class="text-right" style="color: #2563eb;">Rp ${reportTotalCapsterCommission.toLocaleString('id-ID')}</td>
+              <td class="text-right" style="color: #16a34a;">Rp ${reportTotalBarberShopShare.toLocaleString('id-ID')}</td>
+            </tr>
+          </tfoot>
+        </table>
+
+        <h4 style="margin: 15px 0 6px;">2. Rincian Transaksi Konsumen yang Selesai</h4>
+        <table>
+          <thead>
+            <tr>
+              <th>No</th>
+              <th>ID Tiket</th>
+              <th>Waktu</th>
+              <th>Pelanggan</th>
+              <th>Layanan & Model</th>
+              <th>Capster</th>
+              <th class="text-right">Tarif</th>
+              <th class="text-right">Komisi Capster</th>
+              <th>Metode</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${reportBookings.map((b, idx) => {
+              const comm = b.capsterCommission || Math.round((b.totalPrice || 65000) * 0.6);
+              return `
+                <tr>
+                  <td>${idx + 1}</td>
+                  <td><code>${b.id}</code></td>
+                  <td>${b.date} ${b.timeSlot}</td>
+                  <td>${b.customerName}</td>
+                  <td>${b.service} (${b.haircutStyle})</td>
+                  <td>${b.barberName}</td>
+                  <td class="text-right">Rp ${(b.totalPrice || 65000).toLocaleString('id-ID')}</td>
+                  <td class="text-right">Rp ${comm.toLocaleString('id-ID')}</td>
+                  <td>${b.paymentMethod || 'Kasir'}</td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+
+        <div class="signatures">
+          <div class="sig-box">
+            <p>Capster yang Bersangkutan,</p>
+            <div class="sig-line">${selectedBarberName}</div>
+            <p style="font-size: 10px; color: #777;">Tanda tangan pertanggungjawaban</p>
+          </div>
+
+          <div class="sig-box">
+            <p>Admin 1 / Kasir,</p>
+            <div class="sig-line">Admin 1 (0822-9154-4262)</div>
+            <p style="font-size: 10px; color: #777;">Verifikator Keuangan</p>
+          </div>
+
+          <div class="sig-box">
+            <p>Founder & Master Barber,</p>
+            <div class="sig-line">Chief Aa' Mill</div>
+            <p style="font-size: 10px; color: #777;">Pemilik Barbershop AA'MILL</p>
+          </div>
+        </div>
+
+        <script>
+          window.onload = function() {
+            window.print();
+          };
+        </script>
+      </body>
+      </html>
+    `;
+
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+  };
 
   const handleSaveSettingsSubmit = (e) => {
     e.preventDefault();
     onSaveSettings(formSettings);
-    setSaveSuccessMsg('Pengaturan dan konfigurasi Cloud Firestore berhasil diperbarui!');
+    setSaveSuccessMsg('Pengaturan, kontak WhatsApp Admin 1 & 2, serta Cloud Firestore berhasil diperbarui!');
     setTimeout(() => setSaveSuccessMsg(''), 4000);
   };
 
@@ -130,7 +455,9 @@ export default function AdminView({
                   Online
                 </span>
               </div>
-              <p className="text-xs text-zinc-400">Pusat kontrol reservasi cukur, katalog gaya, akademi siswa, & database cloud</p>
+              <p className="text-xs text-zinc-400">
+                Pusat kontrol reservasi cukur, laporan keuangan capster, akademi siswa, & kontak WhatsApp Admin 1 / 2
+              </p>
             </div>
           </div>
 
@@ -152,12 +479,13 @@ export default function AdminView({
         {/* Tab Navigation */}
         <div className="flex flex-wrap gap-2 border-t border-zinc-800/80 pt-4 text-xs font-semibold">
           {[
-            { id: 'overview', label: 'Ringkasan & Statistik', icon: BarChart3 },
+            { id: 'overview', label: 'Ringkasan & KPI', icon: BarChart3 },
+            { id: 'reports', label: '🔥 Laporan Keuangan & Komisi Capster', icon: FileSpreadsheet, highlight: true },
             { id: 'bookings', label: `Daftar Booking (${pendingBookings} Baru)`, icon: Calendar, highlight: pendingBookings > 0 },
             { id: 'haircuts', label: `Katalog Cukuran (${haircuts.length})`, icon: Scissors },
             { id: 'academy', label: `Siswa & Kursus (${students.length})`, icon: BookOpen },
             { id: 'barbers', label: `Tim Barber (${barbers.length})`, icon: Users },
-            { id: 'settings', label: 'Pengaturan & Cloud Firestore', icon: Settings },
+            { id: 'settings', label: 'Pengaturan & Admin WA', icon: Settings },
           ].map((tab) => {
             const Icon = tab.icon;
             const active = activeTab === tab.id;
@@ -174,7 +502,7 @@ export default function AdminView({
                 <Icon className="w-4 h-4" />
                 <span>{tab.label}</span>
                 {tab.highlight && (
-                  <span className="w-2 h-2 rounded-full bg-red-500 animate-ping"></span>
+                  <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
                 )}
               </button>
             );
@@ -182,10 +510,285 @@ export default function AdminView({
         </div>
       </div>
 
-      {/* TAB 1: OVERVIEW & STATS */}
+      {/* TAB: LAPORAN KEUANGAN & KOMISI CAPSTER (CSV & PDF EXPORT) */}
+      {activeTab === 'reports' && (
+        <div className="space-y-8">
+          
+          {/* Header & Filter Bar */}
+          <div className="bg-zinc-900/90 border border-zinc-800 p-6 rounded-3xl space-y-6">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <div className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-amber-400 mb-1">
+                  <FileSpreadsheet className="w-4 h-4" />
+                  <span>Audit Keuangan & Bagi Hasil Capster</span>
+                </div>
+                <h2 className="font-serif-luxury text-2xl font-bold text-white">
+                  Laporan Rekapan Penghasilan & Pertanggungjawaban
+                </h2>
+                <p className="text-xs text-zinc-400">
+                  Pantau omzet harian, mingguan, bulanan, tahunan dan cetak laporan resmi berformat PDF & CSV siap unduh.
+                </p>
+              </div>
+
+              {/* Action Buttons: Download CSV & Print PDF */}
+              <div className="flex flex-wrap items-center gap-3">
+                <button
+                  onClick={handleDownloadCSV}
+                  className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-2 shadow-lg shadow-emerald-600/25 transition-all"
+                  title="Unduh file spreadsheet CSV untuk Excel / Google Sheets"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>Unduh File CSV</span>
+                </button>
+
+                <button
+                  onClick={handlePrintPDF}
+                  className="px-4 py-2.5 rounded-xl bg-gold-gradient text-zinc-950 font-bold text-xs flex items-center gap-2 hover:brightness-110 shadow-lg shadow-amber-500/20 transition-all"
+                  title="Cetak atau simpan sebagai PDF berstandar audit resmi"
+                >
+                  <Printer className="w-4 h-4" />
+                  <span>Cetak / Unduh PDF</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Filter Controls */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pt-4 border-t border-zinc-800 text-xs">
+              
+              {/* Period Selector */}
+              <div>
+                <label className="block text-zinc-400 font-semibold mb-1">Pilih Periode Waktu</label>
+                <div className="grid grid-cols-4 gap-1">
+                  {[
+                    { id: 'daily', label: 'Harian' },
+                    { id: 'weekly', label: 'Mingguan' },
+                    { id: 'monthly', label: 'Bulanan' },
+                    { id: 'yearly', label: 'Tahunan' },
+                  ].map((p) => (
+                    <button
+                      key={p.id}
+                      onClick={() => setReportPeriod(p.id)}
+                      className={`py-2 rounded-xl text-xs font-semibold transition-all ${
+                        reportPeriod === p.id
+                          ? 'bg-amber-500 text-zinc-950 font-bold'
+                          : 'bg-zinc-950 border border-zinc-800 text-zinc-400 hover:text-white'
+                      }`}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Capster Filter */}
+              <div>
+                <label className="block text-zinc-400 font-semibold mb-1">Target Capster / Barber</label>
+                <select
+                  value={reportBarberId}
+                  onChange={(e) => setReportBarberId(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-700 text-white text-xs"
+                >
+                  <option value="all">-- Semua Capster (Konsolidasi Toko) --</option>
+                  {barbers.map((b) => (
+                    <option key={b.id} value={b.id}>
+                      {b.name} ({b.role} - Bagi Hasil {Math.round((b.commissionRate || 0.6) * 100)}%)
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Date Input */}
+              <div>
+                <label className="block text-zinc-400 font-semibold mb-1">
+                  {reportPeriod === 'daily' ? 'Pilih Tanggal Transaksi' : 'Tanggal Acuan Kalender'}
+                </label>
+                <input
+                  type="date"
+                  value={customReportDate}
+                  onChange={(e) => setCustomReportDate(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-700 text-white text-xs"
+                />
+              </div>
+
+            </div>
+          </div>
+
+          {/* Metric Summary Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            
+            <div className="p-5 bg-zinc-900/60 border border-zinc-800 rounded-3xl space-y-1">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-500 flex items-center justify-between">
+                <span>Total Omzet Kotor (Gross)</span>
+                <DollarSign className="w-4 h-4 text-amber-400" />
+              </span>
+              <div className="text-2xl sm:text-3xl font-black text-amber-400 font-serif-luxury">
+                Rp {reportTotalRevenue.toLocaleString('id-ID')}
+              </div>
+              <p className="text-[11px] text-zinc-400">Dari {reportBookings.length} transaksi selesai</p>
+            </div>
+
+            <div className="p-5 bg-zinc-900/60 border border-zinc-800 rounded-3xl space-y-1">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-500 flex items-center justify-between">
+                <span>Hak Komisi Capster</span>
+                <Percent className="w-4 h-4 text-blue-400" />
+              </span>
+              <div className="text-2xl sm:text-3xl font-black text-blue-400 font-serif-luxury">
+                Rp {reportTotalCapsterCommission.toLocaleString('id-ID')}
+              </div>
+              <p className="text-[11px] text-zinc-400">Bagi hasil untuk kapster</p>
+            </div>
+
+            <div className="p-5 bg-zinc-900/60 border border-zinc-800 rounded-3xl space-y-1">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-500 flex items-center justify-between">
+                <span>Kas Bersih Barbershop</span>
+                <TrendingUp className="w-4 h-4 text-emerald-400" />
+              </span>
+              <div className="text-2xl sm:text-3xl font-black text-emerald-400 font-serif-luxury">
+                Rp {reportTotalBarberShopShare.toLocaleString('id-ID')}
+              </div>
+              <p className="text-[11px] text-zinc-400">Pendapatan bersih manajemen</p>
+            </div>
+
+            <div className="p-5 bg-zinc-900/60 border border-zinc-800 rounded-3xl space-y-1">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-500 flex items-center justify-between">
+                <span>Rata-Rata Tiket</span>
+                <Clock className="w-4 h-4 text-purple-400" />
+              </span>
+              <div className="text-2xl sm:text-3xl font-black text-purple-400 font-serif-luxury">
+                Rp {reportAverageTicket.toLocaleString('id-ID')}
+              </div>
+              <p className="text-[11px] text-zinc-400">Per pelanggan pangkas</p>
+            </div>
+
+          </div>
+
+          {/* TABLE 1: REKAPITULASI BAGI HASIL PER MASING-MASING CAPSTER */}
+          <div className="bg-zinc-900/60 border border-zinc-800 rounded-3xl p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-serif-luxury text-lg font-bold text-white">
+                  1. Rekapitulasi Performa & Komisi Per Masing-Masing Capster
+                </h3>
+                <p className="text-xs text-zinc-400">
+                  Digunakan sebagai bukti pertanggungjawaban penyerahan gaji & bagi hasil kepada kapster.
+                </p>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs text-zinc-300">
+                <thead className="bg-zinc-950 text-zinc-500 font-bold uppercase border-b border-zinc-800">
+                  <tr>
+                    <th className="p-3">Nama Capster</th>
+                    <th className="p-3">Peran / Jabatan</th>
+                    <th className="p-3 text-right">Skema Komisi</th>
+                    <th className="p-3 text-right">Total Dicukur</th>
+                    <th className="p-3 text-right">Omzet Bruto</th>
+                    <th className="p-3 text-right">Hak Komisi Capster</th>
+                    <th className="p-3 text-right">Kas Barbershop</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-zinc-800/60">
+                  {barberPerformanceList.map((item) => (
+                    <tr key={item.barber.id} className="hover:bg-zinc-800/40">
+                      <td className="p-3 font-semibold text-white flex items-center gap-2">
+                        <img 
+                          src={item.barber.avatarUrl} 
+                          alt={item.barber.name} 
+                          className="w-7 h-7 rounded-full object-cover border border-amber-500/40"
+                        />
+                        <span>{item.barber.name}</span>
+                      </td>
+                      <td className="p-3 text-zinc-400">{item.barber.role}</td>
+                      <td className="p-3 text-right font-mono text-amber-400">
+                        {Math.round((item.barber.commissionRate || 0.6) * 100)}%
+                      </td>
+                      <td className="p-3 text-right font-bold text-white">
+                        {item.count} Pelanggan
+                      </td>
+                      <td className="p-3 text-right font-mono font-semibold text-zinc-200">
+                        Rp {item.gross.toLocaleString('id-ID')}
+                      </td>
+                      <td className="p-3 text-right font-mono font-bold text-blue-400">
+                        Rp {item.commission.toLocaleString('id-ID')}
+                      </td>
+                      <td className="p-3 text-right font-mono font-bold text-emerald-400">
+                        Rp {item.netBarbershop.toLocaleString('id-ID')}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot className="border-t-2 border-zinc-700 bg-zinc-950/80 font-bold text-xs">
+                  <tr>
+                    <td colSpan="3" className="p-3 text-white uppercase">TOTAL KESELURUHAN</td>
+                    <td className="p-3 text-right text-white">{reportBookings.length} Orang</td>
+                    <td className="p-3 text-right text-amber-400 font-mono">Rp {reportTotalRevenue.toLocaleString('id-ID')}</td>
+                    <td className="p-3 text-right text-blue-400 font-mono">Rp {reportTotalCapsterCommission.toLocaleString('id-ID')}</td>
+                    <td className="p-3 text-right text-emerald-400 font-mono">Rp {reportTotalBarberShopShare.toLocaleString('id-ID')}</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+
+          {/* TABLE 2: RINCIAN DETAIL BUKU KAS TRANSAKSI */}
+          <div className="bg-zinc-900/60 border border-zinc-800 rounded-3xl p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-serif-luxury text-lg font-bold text-white">
+                  2. Rincian Detail Buku Kas Transaksi ({reportBookings.length} Transaksi)
+                </h3>
+                <p className="text-xs text-zinc-400">
+                  Daftar transaksi yang masuk dalam periode terpilih.
+                </p>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs text-zinc-300">
+                <thead className="bg-zinc-950 text-zinc-500 font-bold uppercase border-b border-zinc-800">
+                  <tr>
+                    <th className="p-3">ID Tiket</th>
+                    <th className="p-3">Tanggal & Jam</th>
+                    <th className="p-3">Pelanggan</th>
+                    <th className="p-3">Layanan Grooming</th>
+                    <th className="p-3">Capster</th>
+                    <th className="p-3 text-right">Tarif</th>
+                    <th className="p-3 text-right">Komisi Capster</th>
+                    <th className="p-3 text-right">Metode Bayar</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-zinc-800/60">
+                  {reportBookings.map((b) => {
+                    const comm = b.capsterCommission || Math.round((b.totalPrice || 65000) * 0.6);
+                    return (
+                      <tr key={b.id} className="hover:bg-zinc-800/40">
+                        <td className="p-3 font-mono font-bold text-amber-400">{b.id}</td>
+                        <td className="p-3 text-zinc-300">{b.date} • {b.timeSlot}</td>
+                        <td className="p-3 text-white font-medium">{b.customerName}</td>
+                        <td className="p-3 text-zinc-300">{b.service}</td>
+                        <td className="p-3 text-zinc-200">{b.barberName}</td>
+                        <td className="p-3 text-right font-mono text-zinc-200">
+                          Rp {(b.totalPrice || 65000).toLocaleString('id-ID')}
+                        </td>
+                        <td className="p-3 text-right font-mono font-bold text-blue-400">
+                          Rp {comm.toLocaleString('id-ID')}
+                        </td>
+                        <td className="p-3 text-right text-zinc-400">{b.paymentMethod || 'Kasir'}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+      )}
+
+      {/* TAB: OVERVIEW & STATS */}
       {activeTab === 'overview' && (
         <div className="space-y-8">
-          {/* Key Stat Counters */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="p-5 bg-zinc-900/60 border border-zinc-800 rounded-3xl space-y-1">
               <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-500">Total Booking</span>
@@ -196,9 +799,9 @@ export default function AdminView({
             </div>
 
             <div className="p-5 bg-zinc-900/60 border border-zinc-800 rounded-3xl space-y-1">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-500">Estimasi Omzet</span>
+              <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-500">Total Omzet Keseluruhan</span>
               <div className="text-3xl font-black text-amber-400 font-serif-luxury">
-                Rp {totalRevenue.toLocaleString('id-ID')}
+                Rp {totalRevenueAll.toLocaleString('id-ID')}
               </div>
               <p className="text-xs text-zinc-400">Dari booking dikonfirmasi & selesai</p>
             </div>
@@ -216,67 +819,36 @@ export default function AdminView({
             </div>
           </div>
 
-          {/* Recent Bookings Quick Table */}
-          <div className="bg-zinc-900/60 border border-zinc-800 rounded-3xl p-6 space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="font-serif-luxury text-lg font-bold text-white">Reservasi Terbaru Masuk</h3>
-              <button 
-                onClick={() => setActiveTab('bookings')}
-                className="text-xs text-amber-400 hover:underline font-semibold"
-              >
-                Buka Semua Reservasi →
-              </button>
+          {/* Quick Access to Reports */}
+          <div className="p-6 rounded-3xl bg-gradient-to-r from-amber-950/60 via-zinc-900 to-zinc-950 border border-amber-500/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h4 className="font-serif-luxury text-lg font-bold text-white">
+                Cetak Rekapan Laporan Keuangan Capster
+              </h4>
+              <p className="text-xs text-zinc-300 mt-0.5">
+                Tersedia filter harian, mingguan, bulanan, tahunan dengan ekspor CSV & PDF resmi.
+              </p>
             </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs text-zinc-300">
-                <thead className="bg-zinc-950 text-zinc-500 font-bold uppercase border-b border-zinc-800">
-                  <tr>
-                    <th className="p-3">Kode Booking</th>
-                    <th className="p-3">Pelanggan</th>
-                    <th className="p-3">Layanan & Gaya</th>
-                    <th className="p-3">Barber</th>
-                    <th className="p-3">Waktu</th>
-                    <th className="p-3">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-zinc-800/60">
-                  {bookings.slice(0, 5).map(b => (
-                    <tr key={b.id} className="hover:bg-zinc-800/40">
-                      <td className="p-3 font-mono font-bold text-amber-400">{b.id}</td>
-                      <td className="p-3 font-semibold text-white">{b.customerName} ({b.phone})</td>
-                      <td className="p-3">{b.service} <span className="text-amber-400">({b.haircutStyle})</span></td>
-                      <td className="p-3 text-zinc-400">{b.barberName}</td>
-                      <td className="p-3">{b.date} • {b.timeSlot} WIB</td>
-                      <td className="p-3">
-                        <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
-                          b.status === 'confirmed' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' :
-                          b.status === 'completed' ? 'bg-blue-500/20 text-blue-400' :
-                          b.status === 'cancelled' ? 'bg-red-500/20 text-red-400' :
-                          'bg-amber-500/20 text-amber-400'
-                        }`}>
-                          {b.status}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <button
+              onClick={() => setActiveTab('reports')}
+              className="px-5 py-2.5 rounded-xl bg-gold-gradient text-zinc-950 font-bold text-xs hover:brightness-110 flex items-center gap-2 shrink-0 shadow-md"
+            >
+              <FileSpreadsheet className="w-4 h-4" />
+              <span>Buka Menu Laporan Keuangan</span>
+            </button>
           </div>
         </div>
       )}
 
-      {/* TAB 2: BOOKING MANAGEMENT */}
+      {/* TAB: BOOKING MANAGEMENT */}
       {activeTab === 'bookings' && (
         <div className="space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <h3 className="font-serif-luxury text-xl font-bold text-white">Kelola Reservasi Cukur</h3>
-              <p className="text-xs text-zinc-400">Konfirmasi, jadwalkan ulang, atau tandai reservasi selesai.</p>
+              <p className="text-xs text-zinc-400">Konfirmasi, hubungi nomor WhatsApp pelanggan, atau tandai selesai.</p>
             </div>
 
-            {/* Filter buttons */}
             <div className="flex flex-wrap gap-1.5 text-xs">
               {['all', 'pending', 'confirmed', 'completed', 'cancelled'].map(f => (
                 <button
@@ -392,7 +964,7 @@ export default function AdminView({
         </div>
       )}
 
-      {/* TAB 3: HAIRCUT CATALOG MANAGEMENT */}
+      {/* TAB: HAIRCUT CATALOG */}
       {activeTab === 'haircuts' && (
         <div className="space-y-6">
           <div className="flex items-center justify-between">
@@ -487,8 +1059,7 @@ export default function AdminView({
                         onChange={(e) => setNewHaircut({ ...newHaircut, pomadeRecommended: e.target.value })}
                         placeholder="Matte Clay / Powder"
                         className="w-full px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-700 text-white"
-                      >
-                      </input>
+                      />
                     </div>
                   </div>
 
@@ -506,7 +1077,7 @@ export default function AdminView({
                   </div>
 
                   <div>
-                    <label className="block text-zinc-300 font-semibold mb-1">URL Foto Model (Unsplash / Web)</label>
+                    <label className="block text-zinc-300 font-semibold mb-1">URL Foto Model</label>
                     <input
                       type="url"
                       required
@@ -522,20 +1093,8 @@ export default function AdminView({
                       rows="2"
                       value={newHaircut.description}
                       onChange={(e) => setNewHaircut({ ...newHaircut, description: e.target.value })}
-                      placeholder="Karakteristik potongan dan kesan yang ditampilkan..."
                       className="w-full px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-700 text-white"
                     ></textarea>
-                  </div>
-
-                  <div className="flex items-center gap-2 pt-1">
-                    <input
-                      type="checkbox"
-                      id="trendingCheck"
-                      checked={newHaircut.trending}
-                      onChange={(e) => setNewHaircut({ ...newHaircut, trending: e.target.checked })}
-                      className="rounded bg-zinc-950 border-zinc-700 text-amber-500"
-                    />
-                    <label htmlFor="trendingCheck" className="text-zinc-300">Tandai sebagai model Trending / Paling Diminati</label>
                   </div>
 
                   <div className="pt-3 flex justify-end gap-2">
@@ -560,7 +1119,7 @@ export default function AdminView({
         </div>
       )}
 
-      {/* TAB 4: ACADEMY STUDENTS & COURSES */}
+      {/* TAB: ACADEMY */}
       {activeTab === 'academy' && (
         <div className="space-y-8">
           <div>
@@ -629,12 +1188,12 @@ export default function AdminView({
         </div>
       )}
 
-      {/* TAB 5: BARBER TEAM MANAGEMENT */}
+      {/* TAB: BARBERS */}
       {activeTab === 'barbers' && (
         <div className="space-y-6">
           <div>
             <h3 className="font-serif-luxury text-xl font-bold text-white">Daftar Kapster & Master Barber</h3>
-            <p className="text-xs text-zinc-400">Kelola anggota tim yang dapat dipilih pelanggan saat booking.</p>
+            <p className="text-xs text-zinc-400">Atur profil, spesialisasi, dan persentase komisi bagi hasil.</p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -650,6 +1209,14 @@ export default function AdminView({
                   <p className="text-xs text-amber-400">{b.role}</p>
                   <p className="text-[11px] text-zinc-500">{b.experience}</p>
                 </div>
+
+                <div className="p-2.5 bg-zinc-950 rounded-xl border border-zinc-800 text-xs">
+                  <span className="text-zinc-500 block text-[10px]">Skema Bagi Hasil:</span>
+                  <strong className="text-emerald-400 text-sm font-mono">
+                    {Math.round((b.commissionRate || 0.6) * 100)}% Capster / {100 - Math.round((b.commissionRate || 0.6) * 100)}% Barbershop
+                  </strong>
+                </div>
+
                 <div className="flex flex-wrap justify-center gap-1">
                   {b.specialties?.map((sp, i) => (
                     <span key={i} className="text-[10px] bg-zinc-800 text-zinc-300 px-2 py-0.5 rounded">
@@ -663,13 +1230,13 @@ export default function AdminView({
         </div>
       )}
 
-      {/* TAB 6: SETTINGS & CLOUD FIRESTORE CONFIG */}
+      {/* TAB: SETTINGS & DUA NOMOR ADMIN WA */}
       {activeTab === 'settings' && (
         <div className="space-y-6 max-w-3xl">
           <div>
-            <h3 className="font-serif-luxury text-xl font-bold text-white">Pengaturan Barbershop & Cloud Firestore</h3>
+            <h3 className="font-serif-luxury text-xl font-bold text-white">Pengaturan Barbershop & Kontak Dua Admin</h3>
             <p className="text-xs text-zinc-400">
-              Konfigurasikan informasi toko, WhatsApp, dan sinkronisasi Cloud Firestore / Cloudflare tanpa repot.
+              Atur kontak WhatsApp Admin 1 (082291544262) & Admin 2 (082191843162) untuk direct communication formulir.
             </p>
           </div>
 
@@ -682,10 +1249,94 @@ export default function AdminView({
 
           <form onSubmit={handleSaveSettingsSubmit} className="space-y-6 bg-zinc-900/60 border border-zinc-800 p-6 sm:p-8 rounded-3xl">
             
-            {/* General Info */}
+            {/* KONTAK DUA ADMIN */}
             <div className="space-y-4">
               <h4 className="text-sm font-bold text-amber-400 uppercase tracking-wider border-b border-zinc-800 pb-2">
-                1. Informasi Barbershop & Kontak
+                1. Kontak Resmi Admin Barbershop & Academy
+              </h4>
+
+              {/* Admin 1 Box */}
+              <div className="p-4 bg-zinc-950 rounded-2xl border border-zinc-800 space-y-3">
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+                  <strong className="text-white text-xs">Admin 1 — Layanan Booking & Kasir</strong>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                  <div>
+                    <label className="block text-zinc-400 mb-1">Nama Admin 1</label>
+                    <input
+                      type="text"
+                      value={formSettings.admin1?.name || ''}
+                      onChange={(e) => setFormSettings({
+                        ...formSettings,
+                        admin1: { ...formSettings.admin1, name: e.target.value }
+                      })}
+                      className="w-full px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-700 text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-zinc-400 mb-1">Nomor WhatsApp Admin 1</label>
+                    <input
+                      type="text"
+                      value={formSettings.admin1?.phone || ''}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        const wa = val.replace(/^0/, '62').replace(/[^0-9]/g, '');
+                        setFormSettings({
+                          ...formSettings,
+                          admin1: { ...formSettings.admin1, phone: val, whatsapp: wa }
+                        });
+                      }}
+                      className="w-full px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-700 text-white font-mono"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Admin 2 Box */}
+              <div className="p-4 bg-zinc-950 rounded-2xl border border-zinc-800 space-y-3">
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
+                  <strong className="text-white text-xs">Admin 2 — Academy & Kursus Barber</strong>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                  <div>
+                    <label className="block text-zinc-400 mb-1">Nama Admin 2</label>
+                    <input
+                      type="text"
+                      value={formSettings.admin2?.name || ''}
+                      onChange={(e) => setFormSettings({
+                        ...formSettings,
+                        admin2: { ...formSettings.admin2, name: e.target.value }
+                      })}
+                      className="w-full px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-700 text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-zinc-400 mb-1">Nomor WhatsApp Admin 2</label>
+                    <input
+                      type="text"
+                      value={formSettings.admin2?.phone || ''}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        const wa = val.replace(/^0/, '62').replace(/[^0-9]/g, '');
+                        setFormSettings({
+                          ...formSettings,
+                          admin2: { ...formSettings.admin2, phone: val, whatsapp: wa }
+                        });
+                      }}
+                      className="w-full px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-700 text-white font-mono"
+                    />
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            {/* General Info */}
+            <div className="space-y-4 pt-4 border-t border-zinc-800">
+              <h4 className="text-sm font-bold text-amber-400 uppercase tracking-wider border-b border-zinc-800 pb-2">
+                2. Profil Usaha & Operasional
               </h4>
 
               <div>
@@ -695,17 +1346,6 @@ export default function AdminView({
                   value={formSettings.barbershopName || ''}
                   onChange={(e) => setFormSettings({ ...formSettings, barbershopName: e.target.value })}
                   className="w-full px-4 py-2.5 rounded-xl bg-zinc-950 border border-zinc-700 text-white text-xs"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-zinc-300 mb-1">Nomor WhatsApp Admin (Untuk Menerima Booking)</label>
-                <input
-                  type="text"
-                  value={formSettings.whatsapp || ''}
-                  onChange={(e) => setFormSettings({ ...formSettings, whatsapp: e.target.value })}
-                  placeholder="Contoh: 6281234567890 (awali 62)"
-                  className="w-full px-4 py-2.5 rounded-xl bg-zinc-950 border border-zinc-700 text-white text-xs font-mono"
                 />
               </div>
 
@@ -728,16 +1368,6 @@ export default function AdminView({
                   className="w-full px-4 py-2.5 rounded-xl bg-zinc-950 border border-zinc-700 text-white text-xs"
                 />
               </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-zinc-300 mb-1">Pengumuman Banner Promo Ticker</label>
-                <input
-                  type="text"
-                  value={formSettings.announcement || ''}
-                  onChange={(e) => setFormSettings({ ...formSettings, announcement: e.target.value })}
-                  className="w-full px-4 py-2.5 rounded-xl bg-zinc-950 border border-zinc-700 text-white text-xs"
-                />
-              </div>
             </div>
 
             {/* Cloud Firestore configuration */}
@@ -745,12 +1375,9 @@ export default function AdminView({
               <div className="flex items-center gap-2">
                 <Cloud className="w-5 h-5 text-amber-400" />
                 <h4 className="text-sm font-bold text-amber-400 uppercase tracking-wider">
-                  2. Konfigurasi Cloud Firestore / Firebase (Cloude Fire)
+                  3. Konfigurasi Cloud Firestore / Firebase
                 </h4>
               </div>
-              <p className="text-xs text-zinc-400">
-                Aplikasi ini dilengkapi <em>Hybrid Architecture</em>: Otomatis berjalan cepat & lancar secara offline (LocalStorage), dan saat Anda memasukkan Firebase API Key di bawah, data booking akan tersinkronisasi real-time ke Cloud Firestore!
-              </p>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                 <div>
@@ -776,32 +1403,6 @@ export default function AdminView({
                       firebaseConfig: { ...formSettings.firebaseConfig, projectId: e.target.value }
                     })}
                     placeholder="barbershop-aamill"
-                    className="w-full px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-700 text-white font-mono"
-                  />
-                </div>
-                <div>
-                  <label className="block text-zinc-400 mb-1">Auth Domain</label>
-                  <input
-                    type="text"
-                    value={formSettings.firebaseConfig?.authDomain || ''}
-                    onChange={(e) => setFormSettings({
-                      ...formSettings,
-                      firebaseConfig: { ...formSettings.firebaseConfig, authDomain: e.target.value }
-                    })}
-                    placeholder="barbershop-aamill.firebaseapp.com"
-                    className="w-full px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-700 text-white font-mono"
-                  />
-                </div>
-                <div>
-                  <label className="block text-zinc-400 mb-1">Storage Bucket</label>
-                  <input
-                    type="text"
-                    value={formSettings.firebaseConfig?.storageBucket || ''}
-                    onChange={(e) => setFormSettings({
-                      ...formSettings,
-                      firebaseConfig: { ...formSettings.firebaseConfig, storageBucket: e.target.value }
-                    })}
-                    placeholder="barbershop-aamill.appspot.com"
                     className="w-full px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-700 text-white font-mono"
                   />
                 </div>

@@ -57,9 +57,14 @@ export default function AcademyModal({
     } catch (e) {}
   };
 
+  const [targetAdmin, setTargetAdmin] = useState('admin2'); // 'admin2' as primary for academy
+
   const getWhatsAppRegistrationUrl = () => {
-    const waPhone = settings?.whatsapp || '6281234567890';
-    const message = `Halo Admin AA'MILL Barber Academy! 💈🎓%0A%0ASaya ingin mendaftar program kursus:%0A----------------------------%0A📚 *Paket Kursus:* ${course.title}%0A👤 *Nama Siswa:* ${studentName}%0A📱 *WhatsApp:* ${studentPhone}%0A📍 *Asal Kota:* ${studentCity}%0A💵 *Biaya Kursus:* Rp ${course.price?.toLocaleString('id-ID')}%0A📝 *Catatan:* ${studentNotes || '-'}%0A----------------------------%0AMohon info jadwal batch kelas terdekat dan prosedur transfer pendaftaran. Terima kasih!`;
+    const admin1Wa = settings?.admin1?.whatsapp || '6282291544262';
+    const admin2Wa = settings?.admin2?.whatsapp || '6282191843162';
+    const waPhone = targetAdmin === 'admin1' ? admin1Wa : admin2Wa;
+
+    const message = `Halo Admin ${targetAdmin === 'admin1' ? '1' : '2'} AA'MILL Barber Academy! 💈🎓%0A%0ASaya ingin mendaftar program kursus:%0A----------------------------%0A📚 *Paket Kursus:* ${course.title}%0A👤 *Nama Siswa:* ${studentName}%0A📱 *WhatsApp:* ${studentPhone}%0A📍 *Asal Kota:* ${studentCity}%0A💵 *Biaya Kursus:* Rp ${course.price?.toLocaleString('id-ID')}%0A📝 *Catatan:* ${studentNotes || '-'}%0A----------------------------%0AMohon info jadwal batch kelas terdekat dan prosedur transfer pendaftaran. Terima kasih!`;
     return `https://wa.me/${waPhone}?text=${message}`;
   };
 
@@ -313,6 +318,38 @@ export default function AcademyModal({
                 </div>
               </div>
 
+              {/* Admin target selection */}
+              <div className="max-w-md mx-auto text-left bg-zinc-950 p-3 rounded-2xl border border-zinc-800 space-y-1.5">
+                <span className="text-[11px] text-zinc-400 font-semibold block">Tujuan WhatsApp Admin Academy:</span>
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <button
+                    type="button"
+                    onClick={() => setTargetAdmin('admin2')}
+                    className={`p-2 rounded-xl border text-left transition-all ${
+                      targetAdmin === 'admin2'
+                        ? 'bg-emerald-500/20 border-emerald-500 text-white font-bold'
+                        : 'bg-zinc-900 border-zinc-800 text-zinc-400'
+                    }`}
+                  >
+                    <span className="block text-amber-400">Admin 2 (Academy)</span>
+                    <span className="font-mono text-[10px] text-zinc-400">0821-9184-3162</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setTargetAdmin('admin1')}
+                    className={`p-2 rounded-xl border text-left transition-all ${
+                      targetAdmin === 'admin1'
+                        ? 'bg-emerald-500/20 border-emerald-500 text-white font-bold'
+                        : 'bg-zinc-900 border-zinc-800 text-zinc-400'
+                    }`}
+                  >
+                    <span className="block text-emerald-400">Admin 1 (Reservasi)</span>
+                    <span className="font-mono text-[10px] text-zinc-400">0822-9154-4262</span>
+                  </button>
+                </div>
+              </div>
+
               <div className="space-y-3 max-w-md mx-auto">
                 <a
                   href={getWhatsAppRegistrationUrl()}
@@ -321,7 +358,7 @@ export default function AcademyModal({
                   className="w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/30 transition-all"
                 >
                   <Send className="w-4 h-4" />
-                  <span>Kirim Berkas Pendaftaran ke WhatsApp Academy</span>
+                  <span>Kirim Berkas ke WhatsApp {targetAdmin === 'admin2' ? 'Admin 2' : 'Admin 1'}</span>
                 </a>
 
                 <button

@@ -2,13 +2,30 @@ export const INITIAL_SETTINGS = {
   barbershopName: "BARBERSHOP AA'MILL",
   tagline: "The Art of Precision Haircutting & Master Barber Academy",
   address: "Jl. Veteran No. 88, Pusat Kota, Indonesia",
-  phone: "+62 812-3456-7890",
-  whatsapp: "6281234567890",
+  
+  // Kontak Resmi Dua Admin
+  admin1: {
+    name: "Admin 1 (Reservasi & Booking)",
+    phone: "082291544262",
+    whatsapp: "6282291544262",
+    role: "Layanan Booking, Kasir & Antrean"
+  },
+  admin2: {
+    name: "Admin 2 (Academy & Konsultasi)",
+    phone: "082191843162",
+    whatsapp: "6282191843162",
+    role: "Pendaftaran Kursus Barber & Konsultasi Bisnis"
+  },
+  
+  // Default fallback whatsapp
+  whatsapp: "6282291544262",
+  phone: "+62 822-9154-4262",
+  
   instagram: "@barbershop_aamill",
   tiktok: "@aamillbarber",
   googleMapsUrl: "https://maps.google.com/?q=Barbershop+AAMILL",
   operationalHours: "Senin - Minggu: 09:00 - 22:00 WIB",
-  announcement: "🔥 PROMO KHUSUS ACADEMY: Pendaftaran Angkatan Baru Barber Masterclass diskon 20% bulan ini! Free Starter Kit Wahl Clipper.",
+  announcement: "🔥 HUBUNGI ADMIN: Admin 1 (082291544262) untuk Booking Cukur | Admin 2 (082191843162) untuk Pendaftaran Kursus Barber Academy!",
   firebaseConfig: {
     apiKey: "",
     authDomain: "",
@@ -26,6 +43,7 @@ export const INITIAL_BARBERS = [
     nickname: "Chief Mill",
     role: "Founder & Master Educator",
     experience: "12 Tahun Pengalaman",
+    commissionRate: 0.70, // 70% share for founder/chief
     rating: 5.0,
     totalReviews: 480,
     avatarUrl: "https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=600&auto=format&fit=crop&q=80",
@@ -38,6 +56,7 @@ export const INITIAL_BARBERS = [
     nickname: "Rendy",
     role: "Senior Barber & Stylist",
     experience: "6 Tahun Pengalaman",
+    commissionRate: 0.60, // 60% capster share
     rating: 4.9,
     totalReviews: 310,
     avatarUrl: "https://images.unsplash.com/photo-1622286342621-4bd786c2447c?w=600&auto=format&fit=crop&q=80",
@@ -50,6 +69,7 @@ export const INITIAL_BARBERS = [
     nickname: "Doni",
     role: "Pro Barber & Colorist",
     experience: "5 Tahun Pengalaman",
+    commissionRate: 0.60,
     rating: 4.8,
     totalReviews: 245,
     avatarUrl: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=600&auto=format&fit=crop&q=80",
@@ -62,6 +82,7 @@ export const INITIAL_BARBERS = [
     nickname: "Yoga",
     role: "Junior Barber & Shaving Specialist",
     experience: "3 Tahun Pengalaman",
+    commissionRate: 0.55,
     rating: 4.8,
     totalReviews: 190,
     avatarUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=600&auto=format&fit=crop&q=80",
@@ -443,6 +464,94 @@ export const INITIAL_FEED_POSTS = [
   }
 ];
 
+// DATA MEMBER / KOMUNITAS PELANGGAN YANG SUDAH DIPANGKAS
+export const INITIAL_MEMBERS = [
+  {
+    id: "MBR-001",
+    name: "Dimas Ardiansyah",
+    phone: "081299887766",
+    avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&auto=format&fit=crop&q=80",
+    tier: "VIP Sultan",
+    cutsCount: 18,
+    favoriteBarber: "Aa' Mill",
+    joinedDate: "Maret 2024",
+    lastCutStyle: "Low Taper Fade",
+    badge: "👑 Member Prioritas"
+  },
+  {
+    id: "MBR-002",
+    name: "Rizky Ramadhan",
+    phone: "085611228899",
+    avatar: "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=200&auto=format&fit=crop&q=80",
+    tier: "Gold Gentleman",
+    cutsCount: 12,
+    favoriteBarber: "Rendy Pratama",
+    joinedDate: "Agustus 2024",
+    lastCutStyle: "Textured French Crop",
+    badge: "⭐ Loyal Customer"
+  },
+  {
+    id: "MBR-003",
+    name: "Kevin Pratama",
+    phone: "087788994433",
+    avatar: "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=200&auto=format&fit=crop&q=80",
+    tier: "Gold Gentleman",
+    cutsCount: 9,
+    favoriteBarber: "Doni Setiawan",
+    joinedDate: "November 2024",
+    lastCutStyle: "Korean Two-Block",
+    badge: "⭐ Loyal Customer"
+  },
+  {
+    id: "MBR-004",
+    name: "Bagas Wicaksono",
+    phone: "081399881122",
+    avatar: "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=200&auto=format&fit=crop&q=80",
+    tier: "Silver Member",
+    cutsCount: 5,
+    favoriteBarber: "Yoga Saputra",
+    joinedDate: "Februari 2025",
+    lastCutStyle: "Royal Hot Towel Shave",
+    badge: "⚡ Active Groomer"
+  }
+];
+
+// DISKUSI GRUP / LOUNGE KOMUNITAS PELANGGAN
+export const INITIAL_COMMUNITY_MESSAGES = [
+  {
+    id: "msg-1",
+    author: "Dimas Ardiansyah (VIP Sultan)",
+    avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&auto=format&fit=crop&q=80",
+    content: "Bro ada saran clay pomade yang finish-nya matte banget tapi tetep gampang dicuci pas keramas? Rambut gue agak berminyak nih.",
+    timestamp: "10 Menit yang lalu",
+    likes: 8,
+    replies: [
+      {
+        user: "Chief Aa' Mill",
+        role: "Master Barber",
+        text: "Pake Suavecito Matte Paste atau Uppercut Matte Clay bro Dimas. Pas finishing kasih sedikit Sea Salt Spray waktu rambut setengah lembab, dijamin tahan seharian dan sekali keramas luntur!",
+        time: "5 Menit lalu"
+      }
+    ]
+  },
+  {
+    id: "msg-2",
+    author: "Rizky Ramadhan (Gold Member)",
+    avatar: "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=100&auto=format&fit=crop&q=80",
+    content: "Potongan French Crop kemarin dipuji anak-anak kantor! Mas Rendy juara emang bikin garis poni simetris.",
+    timestamp: "1 Jam yang lalu",
+    likes: 14,
+    replies: [
+      {
+        user: "Rendy Pratama",
+        role: "Senior Barber",
+        text: "Mantap bro Rizky! Jangan lupa 3 minggu lagi mampir touch up taper sampingnya ya biar selalu on-point.",
+        time: "45 Menit lalu"
+      }
+    ]
+  }
+];
+
 export const INITIAL_REVIEWS = [
   {
     id: "rev-1",
@@ -473,7 +582,10 @@ export const INITIAL_REVIEWS = [
   }
 ];
 
+// REKAP TRANSAKSI / BOOKINGS LENGKAP UNTUK LAPORAN KEUANGAN
+// Mencakup transaksi harian, mingguan, bulanan, dan tahunan per masing-masing capster
 export const INITIAL_BOOKINGS = [
+  // HARI INI (13 Nov 2026)
   {
     id: "BOK-9421",
     customerName: "Derry Firmansyah",
@@ -482,12 +594,15 @@ export const INITIAL_BOOKINGS = [
     haircutStyle: "Low Taper Fade",
     barberId: "b1",
     barberName: "Aa' Mill",
-    date: "2026-11-14",
+    date: "2026-11-13",
     timeSlot: "14:00",
-    status: "confirmed",
+    status: "completed",
     totalPrice: 65000,
+    capsterCommission: 45500, // 70%
+    barberShopShare: 19500,
+    paymentMethod: "QRIS / Transfer",
     notes: "Rambut samping tolong jangan terlalu tipis",
-    createdAt: "2026-11-12T10:15:00Z"
+    createdAt: "2026-11-13T09:15:00Z"
   },
   {
     id: "BOK-9422",
@@ -497,12 +612,15 @@ export const INITIAL_BOOKINGS = [
     haircutStyle: "Textured French Crop",
     barberId: "b2",
     barberName: "Rendy Pratama",
-    date: "2026-11-14",
+    date: "2026-11-13",
     timeSlot: "16:00",
-    status: "pending",
+    status: "completed",
     totalPrice: 135000,
+    capsterCommission: 81000, // 60%
+    barberShopShare: 54000,
+    paymentMethod: "Tunai / Cash",
     notes: "Plus pijat leher ekstra kalau bisa",
-    createdAt: "2026-11-12T11:40:00Z"
+    createdAt: "2026-11-13T10:40:00Z"
   },
   {
     id: "BOK-9423",
@@ -516,7 +634,232 @@ export const INITIAL_BOOKINGS = [
     timeSlot: "10:00",
     status: "completed",
     totalPrice: 45000,
+    capsterCommission: 24750, // 55%
+    barberShopShare: 20250,
+    paymentMethod: "QRIS / Transfer",
     notes: "Kulit sensitif butuh lotion aftershave dingin",
-    createdAt: "2026-11-11T16:20:00Z"
+    createdAt: "2026-11-13T08:20:00Z"
+  },
+  {
+    id: "BOK-9424",
+    customerName: "Rian Maulana",
+    phone: "081922334455",
+    service: "Hair Coloring & Bleaching",
+    haircutStyle: "Korean Two-Block Cut",
+    barberId: "b3",
+    barberName: "Doni Setiawan",
+    date: "2026-11-13",
+    timeSlot: "18:30",
+    status: "confirmed",
+    totalPrice: 180000,
+    capsterCommission: 108000,
+    barberShopShare: 72000,
+    paymentMethod: "QRIS / Transfer",
+    notes: "Bleaching Ash Grey level 8",
+    createdAt: "2026-11-13T11:00:00Z"
+  },
+
+  // MINGGU INI (10 - 12 Nov 2026)
+  {
+    id: "BOK-9415",
+    customerName: "Farhan Hakim",
+    phone: "085711223344",
+    service: "Signature Precision Cut",
+    haircutStyle: "Low Taper Fade",
+    barberId: "b1",
+    barberName: "Aa' Mill",
+    date: "2026-11-12",
+    timeSlot: "11:30",
+    status: "completed",
+    totalPrice: 65000,
+    capsterCommission: 45500,
+    barberShopShare: 19500,
+    paymentMethod: "Tunai / Cash",
+    notes: "-",
+    createdAt: "2026-11-12T09:00:00Z"
+  },
+  {
+    id: "BOK-9416",
+    customerName: "Budi Santoso",
+    phone: "081233445566",
+    service: "The Sultan Full Grooming",
+    haircutStyle: "Modern Slick Pompadour",
+    barberId: "b2",
+    barberName: "Rendy Pratama",
+    date: "2026-11-12",
+    timeSlot: "15:00",
+    status: "completed",
+    totalPrice: 135000,
+    capsterCommission: 81000,
+    barberShopShare: 54000,
+    paymentMethod: "QRIS / Transfer",
+    notes: "Styling Pomade oil-based",
+    createdAt: "2026-11-12T13:30:00Z"
+  },
+  {
+    id: "BOK-9417",
+    customerName: "Ahmad Zaki",
+    phone: "087811992200",
+    service: "Kids & Student Gentle Cut",
+    haircutStyle: "Undercut Quiff",
+    barberId: "b4",
+    barberName: "Yoga Saputra",
+    date: "2026-11-11",
+    timeSlot: "16:00",
+    status: "completed",
+    totalPrice: 50000,
+    capsterCommission: 27500,
+    barberShopShare: 22500,
+    paymentMethod: "Tunai / Cash",
+    notes: "Potongan rapi untuk sekolah",
+    createdAt: "2026-11-11T14:15:00Z"
+  },
+  {
+    id: "BOK-9418",
+    customerName: "Galih Prasetya",
+    phone: "085277889900",
+    service: "Hair Spa & Scalp Detox",
+    haircutStyle: "Textured French Crop",
+    barberId: "b3",
+    barberName: "Doni Setiawan",
+    date: "2026-11-10",
+    timeSlot: "14:00",
+    status: "completed",
+    totalPrice: 55000,
+    capsterCommission: 33000,
+    barberShopShare: 22000,
+    paymentMethod: "QRIS / Transfer",
+    notes: "Scalp massage ekstra",
+    createdAt: "2026-11-10T11:00:00Z"
+  },
+
+  // BULAN INI (Awal November 2026)
+  {
+    id: "BOK-9380",
+    customerName: "Hendrik Wijaya",
+    phone: "081199882233",
+    service: "The Sultan Full Grooming",
+    haircutStyle: "High Skin Fade Buzz Cut",
+    barberId: "b1",
+    barberName: "Aa' Mill",
+    date: "2026-11-05",
+    timeSlot: "13:00",
+    status: "completed",
+    totalPrice: 135000,
+    capsterCommission: 94500,
+    barberShopShare: 40500,
+    paymentMethod: "QRIS / Transfer",
+    notes: "Langganan bulanan",
+    createdAt: "2026-11-05T10:00:00Z"
+  },
+  {
+    id: "BOK-9381",
+    customerName: "Dani Firmansyah",
+    phone: "081377881122",
+    service: "Signature Precision Cut",
+    haircutStyle: "Textured Modern Mullet",
+    barberId: "b2",
+    barberName: "Rendy Pratama",
+    date: "2026-11-04",
+    timeSlot: "17:00",
+    status: "completed",
+    totalPrice: 65000,
+    capsterCommission: 39000,
+    barberShopShare: 26000,
+    paymentMethod: "Tunai / Cash",
+    notes: "-",
+    createdAt: "2026-11-04T12:00:00Z"
+  },
+  {
+    id: "BOK-9382",
+    customerName: "Cahyo Utomo",
+    phone: "085811229988",
+    service: "Royal Hot Towel Shave",
+    haircutStyle: "Beard Sculpt & Sharp Fade",
+    barberId: "b4",
+    barberName: "Yoga Saputra",
+    date: "2026-11-03",
+    timeSlot: "19:30",
+    status: "completed",
+    totalPrice: 45000,
+    capsterCommission: 24750,
+    barberShopShare: 20250,
+    paymentMethod: "Tunai / Cash",
+    notes: "Kumis dan jenggot dirapikan",
+    createdAt: "2026-11-03T18:00:00Z"
+  },
+
+  // BULAN LALU (Oktober 2026)
+  {
+    id: "BOK-9290",
+    customerName: "Erik Gunawan",
+    phone: "082188990011",
+    service: "The Sultan Full Grooming",
+    haircutStyle: "Modern Slick Pompadour",
+    barberId: "b1",
+    barberName: "Aa' Mill",
+    date: "2026-10-25",
+    timeSlot: "15:00",
+    status: "completed",
+    totalPrice: 135000,
+    capsterCommission: 94500,
+    barberShopShare: 40500,
+    paymentMethod: "QRIS / Transfer",
+    notes: "-",
+    createdAt: "2026-10-25T13:00:00Z"
+  },
+  {
+    id: "BOK-9291",
+    customerName: "Lukman Hakim",
+    phone: "081277665544",
+    service: "Hair Coloring & Bleaching",
+    haircutStyle: "Korean Two-Block Cut",
+    barberId: "b3",
+    barberName: "Doni Setiawan",
+    date: "2026-10-20",
+    timeSlot: "14:00",
+    status: "completed",
+    totalPrice: 180000,
+    capsterCommission: 108000,
+    barberShopShare: 72000,
+    paymentMethod: "QRIS / Transfer",
+    notes: "Silver Platinum",
+    createdAt: "2026-10-20T11:00:00Z"
+  },
+  {
+    id: "BOK-9292",
+    customerName: "Indra Kusuma",
+    phone: "087755443322",
+    service: "Signature Precision Cut",
+    haircutStyle: "Textured French Crop",
+    barberId: "b2",
+    barberName: "Rendy Pratama",
+    date: "2026-10-18",
+    timeSlot: "16:00",
+    status: "completed",
+    totalPrice: 65000,
+    capsterCommission: 39000,
+    barberShopShare: 26000,
+    paymentMethod: "Tunai / Cash",
+    notes: "-",
+    createdAt: "2026-10-18T14:00:00Z"
+  },
+  {
+    id: "BOK-9293",
+    customerName: "Tommy Pratama",
+    phone: "081399001122",
+    service: "Kids & Student Gentle Cut",
+    haircutStyle: "High Skin Fade Buzz Cut",
+    barberId: "b4",
+    barberName: "Yoga Saputra",
+    date: "2026-10-15",
+    timeSlot: "11:00",
+    status: "completed",
+    totalPrice: 50000,
+    capsterCommission: 27500,
+    barberShopShare: 22500,
+    paymentMethod: "Tunai / Cash",
+    notes: "-",
+    createdAt: "2026-10-15T09:00:00Z"
   }
 ];

@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+  <defs>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F59E0B" />
+      <stop offset="50%" stop-color="#D97706" />
+      <stop offset="100%" stop-color="#B45309" />
+    </linearGradient>
+  </defs>
+  <circle cx="50" cy="50" r="46" stroke="url(#goldGrad)" stroke-width="2.5" fill="#09090B"/>
+  <circle cx="50" cy="50" r="40" stroke="#F59E0B" stroke-width="1" stroke-dasharray="2 3" opacity="0.6"/>
+  
+  <!-- Scissors Icon -->
+  <path d="M38 32 C38 28, 33 26, 30 29 C27 32, 29 37, 33 37 C36 37, 44 45, 50 50 L64 64 M50 50 L64 36 M38 68 C38 72, 33 74, 30 71 C27 68, 29 63, 33 63 C36 63, 44 55, 50 50" stroke="url(#goldGrad)" stroke-width="2.5" stroke-linecap="round"/>
+  
+  <!-- Crown / Razor top detail -->
+  <path d="M42 22 L50 17 L58 22 L54 26 L46 26 Z" fill="url(#goldGrad)"/>
+  
+  <!-- Text AA'MILL -->
+  <text x="50" y="80" text-anchor="middle" font-family="'Cinzel', serif" font-weight="900" font-size="7.5" fill="#FBBF24" letter-spacing="1.5">AA'MILL</text>
+  <text x="50" y="87" text-anchor="middle" font-family="'Plus Jakarta Sans', sans-serif" font-weight="600" font-size="3.5" fill="#A1A1AA" letter-spacing="1">BARBERSHOP</text>
+</svg>

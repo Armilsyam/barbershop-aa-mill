@@ -4,17 +4,32 @@
     <meta charset="utf-8">
     <title>BARBERSHOP AA'MILL & ACADEMY</title>
     <script>
-      // Single Page Apps for GitHub Pages
-      // Redirects 404 to index.html with query path
-      var pathSegmentsToKeep = 1;
-      var l = window.location;
-      l.replace(
-        l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') +
-        l.pathname.split('/').slice(0, 1 + pathSegmentsToKeep).join('/') + '/?/' +
-        l.pathname.slice(1).split('/').slice(pathSegmentsToKeep).join('/').replace(/&/g, '~and~') +
-        (l.search ? '&' + l.search.slice(1).replace(/&/g, '~and~') : '') +
-        l.hash
-      );
+      // Single Page Apps redirect for GitHub Pages, Vercel, Netlify
+      (function() {
+        var l = window.location;
+        var path = l.pathname;
+        
+        // Handle repo base path (GitHub Pages) or root domain (Vercel)
+        var basePath = '';
+        if (path.indexOf('/barbershop-aa-mill') === 0) {
+          basePath = '/barbershop-aa-mill';
+        } else if (path.indexOf('/barbershopaamill') === 0) {
+          basePath = '/barbershopaamill';
+        }
+
+        var subRoute = path.substring(basePath.length).replace(/^\/+/, '').replace(/\/+$/, '');
+        var targetUrl = l.protocol + '//' + l.host + basePath + '/';
+        
+        if (subRoute && subRoute !== 'index.html') {
+          targetUrl += '#' + subRoute;
+        }
+        
+        if (l.search) {
+          targetUrl += (subRoute ? '&' : '?') + l.search.slice(1);
+        }
+        
+        window.location.replace(targetUrl);
+      })();
     </script>
   </head>
   <body>

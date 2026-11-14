@@ -52,9 +52,37 @@ export default function App() {
   const [lessonModalOpen, setLessonModalOpen] = useState(false);
   const [activeLessonDetail, setActiveLessonDetail] = useState(null);
 
-  // Scroll to top on tab change
+  // Sync with URL hash for seamless direct page links and browser history
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.replace(/^#\/?/, '').toLowerCase();
+      const validTabs = ['home', 'lookbook', 'booking', 'academy', 'feed', 'admin'];
+      if (validTabs.includes(hash)) {
+        if (hash === 'admin') {
+          setIsAdmin(true);
+        }
+        setCurrentTab(hash);
+      }
+    };
+
+    // Check hash on initial load
+    handleHashChange();
+
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
+
+  // Scroll to top on tab change and update hash
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
+    const currentHash = window.location.hash.replace(/^#\/?/, '').toLowerCase();
+    if (currentTab === 'home') {
+      if (currentHash && currentHash !== 'home') {
+        history.replaceState(null, '', window.location.pathname + window.location.search);
+      }
+    } else if (currentHash !== currentTab) {
+      window.location.hash = currentTab;
+    }
   }, [currentTab]);
 
   // Handlers for booking
